@@ -4,15 +4,22 @@
 FROM rust:slim-buster as build-stage
 
 WORKDIR "/build"
-COPY . .
+
+# Install and build crates
+COPY Cargo.* /build/
+RUN mkdir /build/src && echo "fn main() {}" > /build/src/main.rs
 RUN cargo build --release
+
+# Build app
+COPY src/ /build/src/
+RUN touch src/main.rs && cargo build --release
 
 ## -----------------------------------------------------------------------------
 ## Package
 ## -----------------------------------------------------------------------------
 FROM debian:buster
 
-COPY --from=build-stage "/build/target/x86_64-unknown-linux-musl/release/http_101" "/app/http_101"
+COPY --from=build-stage "/build/target/release/http-probe" "/app/http-probe"
 
 WORKDIR "/app"
-ENTRYPOINT ["/app/http_101"]
+ENTRYPOINT ["/app/http-probe"]

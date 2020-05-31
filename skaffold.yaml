@@ -1,0 +1,16 @@
+apiVersion: skaffold/v2beta4
+kind: Config
+build:
+  artifacts:
+  - image: manifesthub/http-probe
+    docker:
+      dockerfile: docker/Dockerfile
+  tagPolicy:
+    gitCommit: {}
+  local:
+    push: true
+    useDockerCLI: true
+deploy:
+  kustomize:
+    paths:
+    - deploy/k8s/base
