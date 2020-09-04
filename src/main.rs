@@ -2,7 +2,7 @@ use anyhow::Result;
 
 #[async_std::main]
 async fn main() -> Result<()> {
-    env_logger::init();
+    tide::log::start();
 
     let app = app::run().await?;
     app.listen("0.0.0.0:8080").await?;
