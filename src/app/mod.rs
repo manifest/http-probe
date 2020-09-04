@@ -12,6 +12,7 @@ use tide::{
     http::{headers::HeaderValue, StatusCode},
     log::info,
     security::{CorsMiddleware, Origin},
+    sse,
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -44,12 +45,13 @@ pub(crate) async fn run() -> Result<tide::Server<State>> {
     app.with(cors);
 
     app.at("/").all(index);
+    app.at("/sse").get(sse::endpoint(sse_index));
 
     Ok(app)
 }
 
 async fn reset(throughput: Arc<AtomicUsize>) -> Result<()> {
-    let mut interval = stream::interval(Duration::from_secs(1));
+    let mut interval = stream::interval(Duration::from_secs(60));
     while interval.next().await.is_some() {
         let now = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
@@ -66,6 +68,12 @@ async fn index(req: tide::Request<State>) -> tide::Result {
     req.state().throughput.fetch_add(1, Ordering::SeqCst);
 
     Ok(tide::Response::new(StatusCode::Ok))
+}
+
+async fn sse_index(req: tide::Request<State>, sender: tide::sse::Sender) -> tide::Result<()> {
+    let data = req.state().throughput.load(Ordering::Relaxed).to_string();
+    sender.send("throughput", data, None).await?;
+    Ok(())
 }
 
 ////////////////////////////////////////////////////////////////////////////////
