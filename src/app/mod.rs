@@ -16,7 +16,7 @@ use tide::{
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct State {
     throughput: Arc<AtomicUsize>,
 }
@@ -41,7 +41,7 @@ pub(crate) async fn run() -> Result<tide::Server<State>> {
         .allow_credentials(false);
 
     let mut app = tide::with_state(state);
-    app.middleware(cors);
+    app.with(cors);
 
     app.at("/").all(index);
 
@@ -50,7 +50,7 @@ pub(crate) async fn run() -> Result<tide::Server<State>> {
 
 async fn reset(throughput: Arc<AtomicUsize>) -> Result<()> {
     let mut interval = stream::interval(Duration::from_secs(1));
-    while let Some(_) = interval.next().await {
+    while interval.next().await.is_some() {
         let now = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap()
